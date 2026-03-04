@@ -82,6 +82,9 @@ model AuditLog {
   id          String   @id @default(cuid())
   storeId     String?
   actorUserId String?
+
+  orderId     String?  // NEW
+
   action      String
   entityType  String
   entityId    String
@@ -91,7 +94,10 @@ model AuditLog {
   store       Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
   actor       User?    @relation("ActorLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
 
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull) // NEW
+
   @@index([storeId, createdAt])
   @@index([actorUserId, createdAt])
+  @@index([orderId, createdAt]) // NEW
   @@index([entityType, entityId])
 }
