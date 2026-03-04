@@ -23,8 +23,12 @@ function badgeClass(status: Order["status"]) {
   return "badge badgeCollected";
 }
 
-export default function StoreDashboard({ params }: { params: { slug: string } }) {
-  const slug = params.slug;
+export default function StoreDashboard({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const [slug, setSlug] = React.useState<string | null>(null);
 
   const [phone, setPhone] = React.useState("");
   const [product, setProduct] = React.useState(PRODUCTS[0]);
@@ -37,10 +41,22 @@ export default function StoreDashboard({ params }: { params: { slug: string } })
   const [error, setError] = React.useState<string | null>(null);
   const [lastLink, setLastLink] = React.useState<string | null>(null);
 
-  async function loadOrders() {
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      const p = await params;
+      if (!alive) return;
+      setSlug(p.slug);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [params]);
+
+  async function loadOrders(s: string) {
     setError(null);
     try {
-      const res = await fetch(`/api/stores/${slug}/orders`);
+      const res = await fetch(`/api/stores/${s}/orders`);
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to load orders");
       setOrders(data.orders || []);
@@ -50,13 +66,16 @@ export default function StoreDashboard({ params }: { params: { slug: string } })
   }
 
   React.useEffect(() => {
-    loadOrders();
-    const t = setInterval(loadOrders, 6000);
+    if (!slug) return;
+    loadOrders(slug);
+    const t = setInterval(() => loadOrders(slug), 6000);
     return () => clearInterval(t);
   }, [slug]);
 
   async function createOrder(e: React.FormEvent) {
     e.preventDefault();
+    if (!slug) return;
+
     setError(null);
     setLastLink(null);
     setLoading(true);
@@ -79,7 +98,7 @@ export default function StoreDashboard({ params }: { params: { slug: string } })
       setLastLink(data.pickupLink);
       setPhone("");
       setNote("");
-      await loadOrders();
+      await loadOrders(slug);
     } catch (e: any) {
       setError(e?.message || "Error");
     } finally {
@@ -97,7 +116,7 @@ export default function StoreDashboard({ params }: { params: { slug: string } })
         <div className="brand">
           <a href="/">PickPass</a>
           <span className="pill">Store</span>
-          <span className="pill">/{slug}</span>
+          <span className="pill">{slug ? `/${slug}` : "Loading…"}</span>
         </div>
         <a className="pill" href="/admin">
           Owner Admin
@@ -119,6 +138,7 @@ export default function StoreDashboard({ params }: { params: { slug: string } })
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+49 170 1234567"
                 inputMode="tel"
+                autoComplete="tel"
               />
             </div>
 
@@ -181,7 +201,7 @@ export default function StoreDashboard({ params }: { params: { slug: string } })
               </div>
             </div>
 
-            <button className="button" disabled={loading || phone.trim().length < 6}>
+            <button className="button" disabled={loading || !slug || phone.trim().length < 6}>
               Send SMS
             </button>
 
@@ -194,11 +214,13 @@ export default function StoreDashboard({ params }: { params: { slug: string } })
               </div>
             ) : null}
 
-            {error ? <div className="small" style={{ color: "#fecaca" }}>{error}</div> : null}
+            {error ? (
+              <div className="small" style={{ color: "#fecaca" }}>
+                {error}
+              </div>
+            ) : null}
 
-            <div className="small">
-              MVP: polling every 6 seconds. Later we can do realtime.
-            </div>
+            <div className="small">MVP: polling every 6 seconds.</div>
           </form>
         </div>
 
