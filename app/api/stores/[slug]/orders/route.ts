@@ -78,6 +78,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     await logAction({
       storeId: store.id,
       actorUserId: null,
+      orderId: order.id,
       action: "ORDER_CREATE",
       entityType: "Order",
       entityId: order.id,
@@ -95,6 +96,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     await logAction({
       storeId: store.id,
       actorUserId: null,
+      orderId: order.id,
       action: "SMS_SEND",
       entityType: "Order",
       entityId: order.id,
