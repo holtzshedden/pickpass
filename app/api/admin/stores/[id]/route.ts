@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/db";
-import { assertOwnerKey } from "@/app/lib/owner";
+import { requireOwner } from "@/app/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request, ctx: any) {
+export async function GET(_: Request, ctx: any) {
   try {
-    assertOwnerKey(req);
+    await requireOwner();
 
     const storeId = String(ctx?.params?.id || "");
     if (!storeId) {
