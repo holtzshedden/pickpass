@@ -2,7 +2,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import AppHeader from "@/app/_components/AppHeader";
 
 export const metadata: Metadata = {
   title: "PickPass",
@@ -13,10 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <ClerkProvider>
       <html lang="en">
-        <body>
-          <AppHeader />
-          {children}
-        </body>
+        <body>{children}</body>
       </html>
     </ClerkProvider>
   );
