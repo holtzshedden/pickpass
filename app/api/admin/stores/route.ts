@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { assertOwnerKey } from "@/lib/owner";
-import { logAction } from "@/lib/audit";
+import { prisma } from "@/app/lib/db";
+import { assertOwnerKey } from "@/app/lib/owner";
+import { logAction } from "@/app/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
