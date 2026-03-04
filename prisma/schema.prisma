@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StoreRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum OrderStatus {
+  WAITING
+  READY
+  COLLECTED
+}
+
+model Store {
+  id        String      @id @default(cuid())
+  name      String
+  slug      String      @unique
+  active    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+
+  users     StoreUser[]
+  orders    Order[]
+  logs      AuditLog[]
+}
+
+model User {
+  id        String      @id @default(cuid())
+  email     String      @unique
+  name      String?
+  createdAt DateTime    @default(now())
+
+  stores    StoreUser[]
+  logs      AuditLog[]  @relation("ActorLogs")
+}
+
+model StoreUser {
+  id        String    @id @default(cuid())
+  storeId   String
+  userId    String
+  role      StoreRole @default(STAFF)
+  createdAt DateTime  @default(now())
+
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, userId])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  createdAt DateTime @default(now())
+
+  orders    Order[]
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  storeId    String
+  customerId String
+  product    String
+  status     OrderStatus @default(WAITING)
+  pickupTime String?
+  note       String?
+  token      String      @unique
+  createdAt  DateTime    @default(now())
+
+  store      Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer   Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  logs       AuditLog[]
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  storeId     String?
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String
+  meta        Json?
+  createdAt   DateTime @default(now())
+
+  store       Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  actor       User?    @relation("ActorLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([storeId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([entityType, entityId])
+}
