@@ -2,13 +2,15 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 
 export async function requireUserId() {
-  const { userId } = auth();
+  const { userId } = await auth();
+
   if (!userId) {
     const err = new Error("Unauthorized");
     // @ts-ignore
     err.status = 401;
     throw err;
   }
+
   return userId;
 }
 
