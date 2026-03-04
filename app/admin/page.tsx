@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 type Store = {
   id: string;
@@ -24,7 +24,7 @@ export default function OwnerAdminPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/stores", { cache: "no-store" });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to load stores");
       setStores(data.stores || []);
     } catch (e: any) {
@@ -48,7 +48,7 @@ export default function OwnerAdminPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name, slug }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to create store");
       await loadStores();
     } catch (e: any) {
@@ -70,100 +70,119 @@ export default function OwnerAdminPage() {
           <a className="pill" href="/">
             Home
           </a>
-          <UserButton afterSignOutUrl="/sign-in" />
+
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button className="pill">Sign in</button>
+            </SignInButton>
+          </SignedOut>
+
+          <SignedIn>
+            <UserButton afterSignOutUrl="/sign-in" />
+          </SignedIn>
         </div>
       </div>
 
       <div style={{ height: 14 }} />
 
-      <div className="grid grid-2">
+      <SignedOut>
         <div className="card">
-          <div className="cardTitle">Create store</div>
+          <div className="cardTitle">Sign in required</div>
+          <div className="small">
+            Please sign in to access Owner Admin.
+          </div>
+          <div style={{ height: 10 }} />
+          <SignInButton mode="modal">
+            <button className="button">Sign in</button>
+          </SignInButton>
+        </div>
+      </SignedOut>
 
-          <form onSubmit={createStore} className="grid">
-            <div className="field">
-              <div className="label">Store name</div>
-              <input
-                className="input"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="WeHFree"
-              />
-            </div>
-
-            <div className="field">
-              <div className="label">Slug</div>
-              <input
-                className="input"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="wehfree"
-              />
-              <div className="small">Will be used as: /s/{slug}</div>
-            </div>
-
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <button className="button" disabled={loading}>
-                Create
-              </button>
-              <button
-                type="button"
-                className="buttonSecondary"
-                onClick={loadStores}
-                disabled={loading}
-              >
-                Refresh
-              </button>
-            </div>
-
-            {error ? (
-              <div className="small" style={{ color: "#fecaca" }}>
-                {error}
+      <SignedIn>
+        <div className="grid grid-2">
+          <div className="card">
+            <div className="cardTitle">Create store</div>
+            <form onSubmit={createStore} className="grid">
+              <div className="field">
+                <div className="label">Store name</div>
+                <input
+                  className="input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="WeHFree"
+                />
               </div>
-            ) : null}
 
-            <div className="small">
-              Auth: /admin + /api/admin is protected by Clerk session. Owner check
-              happens server-side via Clerk publicMetadata.pickpassOwner.
-            </div>
-          </form>
-        </div>
+              <div className="field">
+                <div className="label">Slug</div>
+                <input
+                  className="input"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="wehfree"
+                />
+                <div className="small">Will be used as: /s/{slug}</div>
+              </div>
 
-        <div className="card">
-          <div className="cardTitle">Stores</div>
+              <div className="row" style={{ justifyContent: "space-between" }}>
+                <button className="button" disabled={loading}>
+                  Create
+                </button>
+                <button
+                  type="button"
+                  className="buttonSecondary"
+                  onClick={loadStores}
+                  disabled={loading}
+                >
+                  Refresh
+                </button>
+              </div>
 
-          {loading && stores.length === 0 ? (
-            <div className="small">Loading…</div>
-          ) : (
-            <div className="list">
-              {stores.map((s) => (
-                <div key={s.id} className="item">
-                  <div className="itemTop">
-                    <div>
-                      <div style={{ fontWeight: 750 }}>{s.name}</div>
-                      <div className="small">/s/{s.slug}</div>
-                    </div>
-                    <span className="badge">{s.active ? "active" : "inactive"}</span>
-                  </div>
-
-                  <div className="hr" />
-
-                  <div className="row">
-                    <a className="buttonSecondary" href={`/admin/store/${s.id}`}>
-                      Manage
-                    </a>
-                    <a className="buttonSecondary" href={`/s/${s.slug}`}>
-                      Open dashboard
-                    </a>
-                  </div>
+              {error ? (
+                <div className="small" style={{ color: "#fecaca" }}>
+                  {error}
                 </div>
-              ))}
+              ) : null}
 
-              {stores.length === 0 ? <div className="small">No stores yet.</div> : null}
-            </div>
-          )}
+              <div className="small">
+                Auth: /admin + /api/admin is protected by Clerk session. Owner check is
+                via Clerk publicMetadata.pickpassOwner.
+              </div>
+            </form>
+          </div>
+
+          <div className="card">
+            <div className="cardTitle">Stores</div>
+            {loading && stores.length === 0 ? (
+              <div className="small">Loading…</div>
+            ) : (
+              <div className="list">
+                {stores.map((s) => (
+                  <div key={s.id} className="item">
+                    <div className="itemTop">
+                      <div>
+                        <div style={{ fontWeight: 750 }}>{s.name}</div>
+                        <div className="small">/s/{s.slug}</div>
+                      </div>
+                      <span className="badge">{s.active ? "active" : "inactive"}</span>
+                    </div>
+                    <div className="hr" />
+                    <div className="row">
+                      <a className="buttonSecondary" href={`/admin/store/${s.id}`}>
+                        Manage
+                      </a>
+                      <a className="buttonSecondary" href={`/s/${s.slug}`}>
+                        Open dashboard
+                      </a>
+                    </div>
+                  </div>
+                ))}
+                {stores.length === 0 ? <div className="small">No stores yet.</div> : null}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </SignedIn>
     </div>
   );
 }
