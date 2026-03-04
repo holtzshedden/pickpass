@@ -19,6 +19,7 @@ export async function requireOwner() {
   const user = await client.users.getUser(userId);
 
   const flag = (user.publicMetadata as any)?.pickpassOwner;
+
   if (flag !== true) {
     const err = new Error("Forbidden");
     // @ts-ignore
