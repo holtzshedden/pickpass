@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@/app/lib/db";
 
 function badge(status: string) {
   if (status === "READY") return "badge badgeReady";
