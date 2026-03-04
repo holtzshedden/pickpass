@@ -12,45 +12,20 @@ type Store = {
   createdAt: string;
 };
 
-function isForbidden(msg: string) {
-  const m = (msg || "").toLowerCase();
-  return m.includes("forbidden") || m.includes("403");
-}
-
-function isUnauthorized(msg: string) {
-  const m = (msg || "").toLowerCase();
-  return m.includes("unauthorized") || m.includes("401");
-}
-
 export default function OwnerAdminPage() {
   const [stores, setStores] = React.useState<Store[]>([]);
   const [loading, setLoading] = React.useState(false);
-
   const [name, setName] = React.useState("WeHFree");
   const [slug, setSlug] = React.useState("wehfree");
-
   const [error, setError] = React.useState<string | null>(null);
-
-  const [statusHint, setStatusHint] = React.useState<
-    "ok" | "unauthorized" | "forbidden" | "error"
-  >("ok");
 
   async function loadStores() {
     setError(null);
     setLoading(true);
     try {
       const res = await fetch("/api/admin/stores", { cache: "no-store" });
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        const msg = String(data?.error || "Failed to load stores");
-        if (res.status === 401 || isUnauthorized(msg)) setStatusHint("unauthorized");
-        else if (res.status === 403 || isForbidden(msg)) setStatusHint("forbidden");
-        else setStatusHint("error");
-        throw new Error(msg);
-      }
-
-      setStatusHint("ok");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to load stores");
       setStores(data.stores || []);
     } catch (e: any) {
       setError(e?.message || "Error");
@@ -65,28 +40,16 @@ export default function OwnerAdminPage() {
 
   async function createStore(e: React.FormEvent) {
     e.preventDefault();
-
     setError(null);
     setLoading(true);
-
     try {
       const res = await fetch("/api/admin/stores", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name, slug }),
       });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        const msg = String(data?.error || "Failed to create store");
-        if (res.status === 401 || isUnauthorized(msg)) setStatusHint("unauthorized");
-        else if (res.status === 403 || isForbidden(msg)) setStatusHint("forbidden");
-        else setStatusHint("error");
-        throw new Error(msg);
-      }
-
-      setStatusHint("ok");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to create store");
       await loadStores();
     } catch (e: any) {
       setError(e?.message || "Error");
@@ -94,8 +57,6 @@ export default function OwnerAdminPage() {
       setLoading(false);
     }
   }
-
-  const canInteract = statusHint === "ok";
 
   return (
     <div className="container">
@@ -112,7 +73,7 @@ export default function OwnerAdminPage() {
 
           <SignedOut>
             <SignInButton mode="modal">
-              <button className="pill">Sign in</button>
+              <button className="pill">Login</button>
             </SignInButton>
           </SignedOut>
 
@@ -126,146 +87,99 @@ export default function OwnerAdminPage() {
 
       <SignedOut>
         <div className="card">
-          <div className="cardTitle">Sign in required</div>
-          <div className="small" style={{ marginTop: 8 }}>
-            Please sign in to access Owner Admin.
-          </div>
+          <div className="cardTitle">Login required</div>
+          <div className="small">Please sign in to access Owner Admin.</div>
           <div style={{ height: 10 }} />
           <SignInButton mode="modal">
-            <button className="button">Sign in</button>
+            <button className="button">Login</button>
           </SignInButton>
         </div>
       </SignedOut>
 
       <SignedIn>
-        {statusHint === "forbidden" ? (
+        <div className="grid grid-2">
           <div className="card">
-            <div className="cardTitle">Access denied</div>
-            <div className="small" style={{ marginTop: 8 }}>
-              Your account is signed in, but it is not marked as <b>pickpassOwner</b> in
-              Clerk.
-            </div>
-            <div className="small" style={{ marginTop: 8 }}>
-              Fix: Clerk Dashboard → Users → your user → Public metadata →{" "}
-              <code>{"{ \"pickpassOwner\": true }"}</code>
-            </div>
-            {error ? (
-              <div className="small" style={{ color: "#fecaca", marginTop: 10 }}>
-                {error}
+            <div className="cardTitle">Create store</div>
+            <form onSubmit={createStore} className="grid">
+              <div className="field">
+                <div className="label">Store name</div>
+                <input
+                  className="input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="WeHFree"
+                />
               </div>
-            ) : null}
-            <div style={{ height: 10 }} />
-            <button className="buttonSecondary" onClick={loadStores} disabled={loading}>
-              Retry
-            </button>
+
+              <div className="field">
+                <div className="label">Slug</div>
+                <input
+                  className="input"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="wehfree"
+                />
+                <div className="small">Will be used as: /s/{slug}</div>
+              </div>
+
+              <div className="row" style={{ justifyContent: "space-between" }}>
+                <button className="button" disabled={loading}>
+                  Create
+                </button>
+                <button
+                  type="button"
+                  className="buttonSecondary"
+                  onClick={loadStores}
+                  disabled={loading}
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {error ? (
+                <div className="small" style={{ color: "#fecaca" }}>
+                  {error}
+                </div>
+              ) : null}
+
+              <div className="small">
+                Auth: /admin + /api/admin is protected by Clerk session. Owner check is via Clerk
+                publicMetadata.pickpassOwner.
+              </div>
+            </form>
           </div>
-        ) : statusHint === "unauthorized" ? (
+
           <div className="card">
-            <div className="cardTitle">Session required</div>
-            <div className="small" style={{ marginTop: 8 }}>
-              Please sign out and sign in again.
-            </div>
-            {error ? (
-              <div className="small" style={{ color: "#fecaca", marginTop: 10 }}>
-                {error}
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <div className="grid grid-2">
-            <div className="card">
-              <div className="cardTitle">Create store</div>
-
-              <form onSubmit={createStore} className="grid">
-                <div className="field">
-                  <div className="label">Store name</div>
-                  <input
-                    className="input"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="WeHFree"
-                    disabled={!canInteract}
-                  />
-                </div>
-
-                <div className="field">
-                  <div className="label">Slug</div>
-                  <input
-                    className="input"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    placeholder="wehfree"
-                    disabled={!canInteract}
-                  />
-                  <div className="small">Will be used as: /s/{slug}</div>
-                </div>
-
-                <div className="row" style={{ justifyContent: "space-between" }}>
-                  <button
-                    className="button"
-                    disabled={loading || !canInteract || !name.trim() || !slug.trim()}
-                  >
-                    Create
-                  </button>
-                  <button
-                    type="button"
-                    className="buttonSecondary"
-                    onClick={loadStores}
-                    disabled={loading}
-                  >
-                    Refresh
-                  </button>
-                </div>
-
-                {error ? (
-                  <div className="small" style={{ color: "#fecaca" }}>
-                    {error}
-                  </div>
-                ) : null}
-
-                <div className="small">
-                  Auth: /api/admin is protected by Clerk session. Owner check happens
-                  server-side via Clerk publicMetadata.pickpassOwner.
-                </div>
-              </form>
-            </div>
-
-            <div className="card">
-              <div className="cardTitle">Stores</div>
-
-              {loading && stores.length === 0 ? (
-                <div className="small">Loading…</div>
-              ) : (
-                <div className="list">
-                  {stores.map((s) => (
-                    <div key={s.id} className="item">
-                      <div className="itemTop">
-                        <div>
-                          <div style={{ fontWeight: 750 }}>{s.name}</div>
-                          <div className="small">/s/{s.slug}</div>
-                        </div>
-                        <span className="badge">{s.active ? "active" : "inactive"}</span>
+            <div className="cardTitle">Stores</div>
+            {loading && stores.length === 0 ? (
+              <div className="small">Loading…</div>
+            ) : (
+              <div className="list">
+                {stores.map((s) => (
+                  <div key={s.id} className="item">
+                    <div className="itemTop">
+                      <div>
+                        <div style={{ fontWeight: 750 }}>{s.name}</div>
+                        <div className="small">/s/{s.slug}</div>
                       </div>
-
-                      <div className="hr" />
-
-                      <div className="row">
-                        <a className="buttonSecondary" href={`/admin/store/${s.id}`}>
-                          Manage
-                        </a>
-                        <a className="buttonSecondary" href={`/s/${s.slug}`}>
-                          Open dashboard
-                        </a>
-                      </div>
+                      <span className="badge">{s.active ? "active" : "inactive"}</span>
                     </div>
-                  ))}
-
-                  {stores.length === 0 ? <div className="small">No stores yet.</div> : null}
-                </div>
-              )}
-            </div>
+                    <div className="hr" />
+                    <div className="row">
+                      <a className="buttonSecondary" href={`/admin/store/${s.id}`}>
+                        Manage
+                      </a>
+                      <a className="buttonSecondary" href={`/s/${s.slug}`}>
+                        Open dashboard
+                      </a>
+                    </div>
+                  </div>
+                ))}
+                {stores.length === 0 ? <div className="small">No stores yet.</div> : null}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </SignedIn>
     </div>
   );
