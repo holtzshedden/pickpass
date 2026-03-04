@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { SignOutButton, UserButton } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
 
 type Store = {
   id: string;
@@ -23,8 +23,8 @@ export default function OwnerAdminPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/stores", { method: "GET" });
-      const data = await res.json();
+      const res = await fetch("/api/admin/stores", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Failed to load stores");
       setStores(data.stores || []);
     } catch (e: any) {
@@ -48,7 +48,7 @@ export default function OwnerAdminPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name, slug }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Failed to create store");
       await loadStores();
     } catch (e: any) {
@@ -70,12 +70,7 @@ export default function OwnerAdminPage() {
           <a className="pill" href="/">
             Home
           </a>
-          <UserButton />
-          <SignOutButton>
-            <button className="pill" type="button">
-              Sign out
-            </button>
-          </SignOutButton>
+          <UserButton afterSignOutUrl="/sign-in" />
         </div>
       </div>
 
@@ -84,6 +79,7 @@ export default function OwnerAdminPage() {
       <div className="grid grid-2">
         <div className="card">
           <div className="cardTitle">Create store</div>
+
           <form onSubmit={createStore} className="grid">
             <div className="field">
               <div className="label">Store name</div>
@@ -127,8 +123,8 @@ export default function OwnerAdminPage() {
             ) : null}
 
             <div className="small">
-              Auth: /admin + /api/admin is protected by Clerk session. Owner check is
-              via Clerk publicMetadata.pickpassOwner.
+              Auth: /admin + /api/admin is protected by Clerk session. Owner check
+              happens server-side via Clerk publicMetadata.pickpassOwner.
             </div>
           </form>
         </div>
@@ -162,6 +158,7 @@ export default function OwnerAdminPage() {
                   </div>
                 </div>
               ))}
+
               {stores.length === 0 ? <div className="small">No stores yet.</div> : null}
             </div>
           )}
