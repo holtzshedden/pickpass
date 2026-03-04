@@ -9,11 +9,11 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.0.0",
+    "@clerk/nextjs": "^6.39.0",
     "@prisma/client": "^6.0.0",
     "next": "15.5.7",
-    "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react": "19.1.4",
+    "react-dom": "19.1.4"
   },
   "devDependencies": {
     "@types/node": "22.13.5",
