@@ -2,7 +2,8 @@ import { prisma } from "./db";
 
 export async function logAction(params: {
   storeId?: string | null;
-  actorUserId?: string | null; // später echte Auth
+  actorUserId?: string | null;
+  orderId?: string | null;
   action: string;
   entityType: string;
   entityId: string;
@@ -12,6 +13,7 @@ export async function logAction(params: {
     data: {
       storeId: params.storeId ?? null,
       actorUserId: params.actorUserId ?? null,
+      orderId: params.orderId ?? null,
       action: params.action,
       entityType: params.entityType,
       entityId: params.entityId,
