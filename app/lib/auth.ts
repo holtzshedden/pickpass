@@ -17,7 +17,9 @@ export async function requireUserId() {
 export async function requireOwner() {
   const userId = await requireUserId();
 
-  const user = await clerkClient.users.getUser(userId);
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+
   const flag = (user.publicMetadata as any)?.pickpassOwner;
 
   if (flag !== true) {
