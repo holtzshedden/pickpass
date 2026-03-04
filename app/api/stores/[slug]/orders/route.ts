@@ -8,9 +8,14 @@ import type { OrderStatus } from "@prisma/client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_: Request, { params }: { params: { slug: string } }) {
+export async function GET(_: Request, ctx: any) {
   try {
-    const store = await prisma.store.findUnique({ where: { slug: params.slug } });
+    const slug = String(ctx?.params?.slug || "");
+    if (!slug) {
+      return NextResponse.json({ ok: false, error: "Missing store slug" }, { status: 400 });
+    }
+
+    const store = await prisma.store.findUnique({ where: { slug } });
     if (!store) return NextResponse.json({ ok: false, error: "Store not found" }, { status: 404 });
 
     const orders = await prisma.order.findMany({
@@ -26,9 +31,14 @@ export async function GET(_: Request, { params }: { params: { slug: string } }) 
   }
 }
 
-export async function POST(req: Request, { params }: { params: { slug: string } }) {
+export async function POST(req: Request, ctx: any) {
   try {
-    const store = await prisma.store.findUnique({ where: { slug: params.slug } });
+    const slug = String(ctx?.params?.slug || "");
+    if (!slug) {
+      return NextResponse.json({ ok: false, error: "Missing store slug" }, { status: 400 });
+    }
+
+    const store = await prisma.store.findUnique({ where: { slug } });
     if (!store) return NextResponse.json({ ok: false, error: "Store not found" }, { status: 404 });
 
     const body = await req.json();
