@@ -1,6 +1,7 @@
+// app/api/admin/stores/[id]/assign/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/db";
-import { assertOwnerKey } from "@/app/lib/owner";
+import { requireOwner } from "@/app/lib/auth";
 import { logAction } from "@/app/lib/audit";
 import type { StoreRole } from "@prisma/client";
 
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request, ctx: any) {
   try {
-    assertOwnerKey(req);
+    const { userId } = await requireOwner();
 
     const storeId = String(ctx?.params?.id || "");
     if (!storeId) {
@@ -46,7 +47,7 @@ export async function POST(req: Request, ctx: any) {
 
     await logAction({
       storeId: store.id,
-      actorUserId: null,
+      actorUserId: userId,
       action: "STORE_USER_ASSIGN",
       entityType: "StoreUser",
       entityId: storeUser.id,
