@@ -15,8 +15,12 @@ function ownerKey() {
   return process.env.NEXT_PUBLIC_PICKPASS_OWNER_KEY || "";
 }
 
-export default function StoreManagePage({ params }: { params: { id: string } }) {
-  const storeId = params.id;
+export default function StoreManagePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const [storeId, setStoreId] = React.useState<string | null>(null);
 
   const [store, setStore] = React.useState<Store | null>(null);
   const [logs, setLogs] = React.useState<LogItem[]>([]);
@@ -25,11 +29,23 @@ export default function StoreManagePage({ params }: { params: { id: string } }) 
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  async function load() {
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      const p = await params;
+      if (!alive) return;
+      setStoreId(p.id);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [params]);
+
+  async function load(id: string) {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/stores/${storeId}`, {
+      const res = await fetch(`/api/admin/stores/${id}`, {
         headers: { "x-pickpass-owner-key": ownerKey() },
       });
       const data = await res.json();
@@ -44,11 +60,14 @@ export default function StoreManagePage({ params }: { params: { id: string } }) 
   }
 
   React.useEffect(() => {
-    load();
-  }, []);
+    if (!storeId) return;
+    load(storeId);
+  }, [storeId]);
 
   async function assignUser(e: React.FormEvent) {
     e.preventDefault();
+    if (!storeId) return;
+
     setError(null);
     setLoading(true);
     try {
@@ -63,7 +82,7 @@ export default function StoreManagePage({ params }: { params: { id: string } }) 
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to assign user");
       setEmail("");
-      await load();
+      await load(storeId);
     } catch (e: any) {
       setError(e?.message || "Error");
     } finally {
@@ -98,12 +117,10 @@ export default function StoreManagePage({ params }: { params: { id: string } }) 
               <div className="small">Slug: {store.slug}</div>
               <div className="small">Status: {store.active ? "active" : "inactive"}</div>
               <div className="hr" />
-              <div className="small">
-                Next step: real authentication and store member management UI.
-              </div>
+              <div className="small">MVP: protected by owner key.</div>
             </>
           ) : (
-            <div className="small">Loading…</div>
+            <div className="small">{storeId ? "Loading…" : "Loading params…"}</div>
           )}
         </div>
 
@@ -132,11 +149,15 @@ export default function StoreManagePage({ params }: { params: { id: string } }) 
               </select>
             </div>
 
-            <button className="button" disabled={loading || !email.trim()}>
+            <button className="button" disabled={loading || !email.trim() || !storeId}>
               Assign
             </button>
 
-            {error ? <div className="small" style={{ color: "#fecaca" }}>{error}</div> : null}
+            {error ? (
+              <div className="small" style={{ color: "#fecaca" }}>
+                {error}
+              </div>
+            ) : null}
           </form>
         </div>
       </div>
