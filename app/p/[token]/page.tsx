@@ -6,8 +6,12 @@ function badge(status: string) {
   return "badge badgeCollected";
 }
 
-export default async function PickupPage({ params }: { params: { token: string } }) {
-  const token = params.token;
+export default async function PickupPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
 
   const order = await prisma.order.findUnique({
     where: { token },
