@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/db";
-import { assertOwnerKey } from "@/app/lib/owner";
+import { requireOwner } from "@/app/lib/auth";
 import { logAction } from "@/app/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    assertOwnerKey(req);
+    await requireOwner();
 
     const stores = await prisma.store.findMany({
       orderBy: { createdAt: "desc" },
@@ -23,18 +23,16 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    assertOwnerKey(req);
+    const { userId } = await requireOwner();
 
     const body = await req.json();
     const name = String(body?.name || "").trim();
     const slug = String(body?.slug || "").trim().toLowerCase();
 
     if (!name) return NextResponse.json({ ok: false, error: "Missing name" }, { status: 400 });
-    if (!slug || !/^[a-z0-9-]+$/.test(slug))
-      return NextResponse.json(
-        { ok: false, error: "Slug must be a-z, 0-9, -" },
-        { status: 400 }
-      );
+    if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
+      return NextResponse.json({ ok: false, error: "Slug must be a-z, 0-9, -" }, { status: 400 });
+    }
 
     const store = await prisma.store.create({
       data: { name, slug },
@@ -42,7 +40,7 @@ export async function POST(req: Request) {
 
     await logAction({
       storeId: store.id,
-      actorUserId: null,
+      actorUserId: userId,
       action: "STORE_CREATE",
       entityType: "Store",
       entityId: store.id,
