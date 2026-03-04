@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { assertOwnerKey } from "@/lib/owner";
+import { prisma } from "@/app/lib/db";
+import { assertOwnerKey } from "@/app/lib/owner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
