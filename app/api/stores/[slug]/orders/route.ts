@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { generateToken } from "@/lib/token";
-import { logAction } from "@/lib/audit";
-import { sendPickupSms } from "@/lib/sms";
+import { prisma } from "@/app/lib/db";
+import { generateToken } from "@/app/lib/token";
+import { logAction } from "@/app/lib/audit";
+import { sendPickupSms } from "@/app/lib/sms";
 import type { OrderStatus } from "@prisma/client";
 
 export const runtime = "nodejs";
