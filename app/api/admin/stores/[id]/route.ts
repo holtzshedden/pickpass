@@ -5,12 +5,19 @@ import { assertOwnerKey } from "@/app/lib/owner";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, ctx: any) {
   try {
     assertOwnerKey(req);
 
-    const store = await prisma.store.findUnique({ where: { id: params.id } });
-    if (!store) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+    const storeId = String(ctx?.params?.id || "");
+    if (!storeId) {
+      return NextResponse.json({ ok: false, error: "Missing store id" }, { status: 400 });
+    }
+
+    const store = await prisma.store.findUnique({ where: { id: storeId } });
+    if (!store) {
+      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+    }
 
     const logs = await prisma.auditLog.findMany({
       where: { storeId: store.id },
