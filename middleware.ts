@@ -1,15 +1,15 @@
 // middleware.ts
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-const isProtectedRoute = createRouteMatcher([
-  "/admin(.*)",
-  "/s(.*)",
+const isProtectedApiRoute = createRouteMatcher([
   "/api/admin(.*)",
   "/api/stores(.*)",
 ]);
 
 export default clerkMiddleware((auth, req) => {
-  if (isProtectedRoute(req)) auth.protect();
+  if (isProtectedApiRoute(req)) {
+    auth.protect();
+  }
 });
 
 export const config = {
